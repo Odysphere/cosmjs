@@ -15,6 +15,8 @@ import { PubKey as CosmosCryptoEd25519Pubkey } from "cosmjs-types/cosmos/crypto/
 import { LegacyAminoPubKey } from "cosmjs-types/cosmos/crypto/multisig/keys";
 import { PubKey as CosmosCryptoSecp256k1Pubkey } from "cosmjs-types/cosmos/crypto/secp256k1/keys";
 import { Any } from "cosmjs-types/google/protobuf/any";
+import { isEthSecp256k1Pubkey } from "@cosmjs/amino/build/pubkeys";
+import { encodeEthSecp256k1Pubkey } from "@cosmjs/amino/build/encoding";
 
 /**
  * Takes a pubkey in the Amino JSON object style (type/value wrapper)
@@ -48,6 +50,14 @@ export function encodePubkey(pubkey: Pubkey): Any {
       typeUrl: "/cosmos.crypto.multisig.LegacyAminoPubKey",
       value: Uint8Array.from(LegacyAminoPubKey.encode(pubkeyProto).finish()),
     });
+  } else if (isEthSecp256k1Pubkey(pubkey)) {
+    const pubkeyProto = CosmosCryptoSecp256k1Pubkey.fromPartial({
+      key: fromBase64(pubkey.value),
+    });
+    return Any.fromPartial({
+      typeUrl: "/ethermint.crypto.v1.ethsecp256k1.PubKey",
+      value: Uint8Array.from(CosmosCryptoSecp256k1Pubkey.encode(pubkeyProto).finish()),
+    });
   } else {
     throw new Error(`Pubkey type ${pubkey.type} not recognized`);
   }
@@ -68,6 +78,10 @@ export function anyToSinglePubkey(pubkey: Any): SinglePubkey {
     case "/cosmos.crypto.ed25519.PubKey": {
       const { key } = CosmosCryptoEd25519Pubkey.decode(pubkey.value);
       return encodeEd25519Pubkey(key);
+    }
+    case "/ethermint.crypto.v1.ethsecp256k1.PubKey": {
+      const { key } = CosmosCryptoSecp256k1Pubkey.decode(pubkey.value);
+      return encodeEthSecp256k1Pubkey(key);
     }
     default:
       throw new Error(`Pubkey type_url ${pubkey.typeUrl} not recognized as single public key type`);

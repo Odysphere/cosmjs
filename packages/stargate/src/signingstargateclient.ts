@@ -51,6 +51,8 @@ import {
   createVestingAminoConverters,
 } from "./modules";
 import { DeliverTxResponse, StargateClient, StargateClientOptions } from "./stargateclient";
+import { encodeEthSecp256k1Pubkey } from "@cosmjs/amino/build/encoding";
+import { isEthSecp256k1Pubkey } from "@cosmjs/amino/build/pubkeys";
 
 export const defaultRegistryTypes: ReadonlyArray<[string, GeneratedType]> = [
   ["/cosmos.base.v1beta1.Coin", Coin],
@@ -399,7 +401,11 @@ export class SigningStargateClient extends StargateClient {
     if (!accountFromSigner) {
       throw new Error("Failed to retrieve account from signer");
     }
-    const pubkey = encodePubkey(encodeSecp256k1Pubkey(accountFromSigner.pubkey));
+    const pubkey = encodePubkey(
+      accountFromSigner.pubkey && isEthSecp256k1Pubkey(accountFromSigner.pubkey)
+        ? encodeEthSecp256k1Pubkey(accountFromSigner.pubkey)
+        : encodeSecp256k1Pubkey(accountFromSigner.pubkey),
+    );
     const signMode = SignMode.SIGN_MODE_LEGACY_AMINO_JSON;
     const msgs = messages.map((msg) => this.aminoTypes.toAmino(msg));
     const signDoc = makeSignDocAmino(msgs, fee, chainId, memo, accountNumber, sequence, timeoutHeight);
@@ -446,7 +452,11 @@ export class SigningStargateClient extends StargateClient {
     if (!accountFromSigner) {
       throw new Error("Failed to retrieve account from signer");
     }
-    const pubkey = encodePubkey(encodeSecp256k1Pubkey(accountFromSigner.pubkey));
+    const pubkey = encodePubkey(
+      accountFromSigner.pubkey && isEthSecp256k1Pubkey(accountFromSigner.pubkey)
+        ? encodeEthSecp256k1Pubkey(accountFromSigner.pubkey)
+        : encodeSecp256k1Pubkey(accountFromSigner.pubkey),
+    );
     const txBodyEncodeObject: TxBodyEncodeObject = {
       typeUrl: "/cosmos.tx.v1beta1.TxBody",
       value: {
